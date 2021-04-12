@@ -83,7 +83,7 @@ module CBin
 
       def static_libs_in_sandbox(build_dir = "build")
         file = Dir.glob("#{build_dir}/lib#{target_name}.a")
-        puts "static_libs_in_sandbox ------------ #{file}"
+        puts "static_libs_in_sandbox ------------ #{file}, #{Dir.glob("**")}"
         unless file
           UI.warn "file no find = #{build_dir}/lib#{target_name}.a"
         end
