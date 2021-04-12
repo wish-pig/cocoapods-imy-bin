@@ -1,16 +1,16 @@
 # copy from https://github.com/CocoaPods/cocoapods-packager
 
-require 'cocoapods-imy-bin/helpers/framework.rb'
-require 'English'
-require 'cocoapods-imy-bin/config/config_builder'
-require 'shellwords'
+require "cocoapods-imy-bin/helpers/framework.rb"
+require "English"
+require "cocoapods-imy-bin/config/config_builder"
+require "shellwords"
 
 module CBin
   class Framework
     class Builder
       include Pod
       #Debug下还待完成
-      def initialize(spec, file_accessor, platform, source_dir, isRootSpec = true, build_model="Debug")
+      def initialize(spec, file_accessor, platform, source_dir, isRootSpec = true, build_model = "Debug")
         @spec = spec
         @source_dir = source_dir
         @file_accessor = file_accessor
@@ -20,9 +20,9 @@ module CBin
         #vendored_static_frameworks 只有 xx.framework  需要拼接为 xx.framework/xx by slj
         vendored_static_frameworks = file_accessor.vendored_static_frameworks.map do |framework|
           path = framework
-          extn = File.extname  path
-          if extn.downcase == '.framework'
-            path = File.join(path,File.basename(path, extn))
+          extn = File.extname path
+          if extn.downcase == ".framework"
+            path = File.join(path, File.basename(path, extn))
           end
           path
         end
@@ -38,11 +38,13 @@ module CBin
       end
 
       def lipo_build(defines)
+        puts "lipo中   #{defines}"
         UI.section("Building static Library #{@spec}") do
           # defines = compile
 
           # build_sim_libraries(defines)
           output = framework.versions_path + Pathname.new(@spec.name)
+          puts "lipo中  output #{output}"
 
           build_static_library_for_ios(output)
 
@@ -59,7 +61,7 @@ module CBin
 
       def cp_to_source_dir
         framework_name = "#{@spec.name}.framework"
-        target_dir = File.join(CBin::Config::Builder.instance.zip_dir,framework_name)
+        target_dir = File.join(CBin::Config::Builder.instance.zip_dir, framework_name)
         FileUtils.rm_rf(target_dir) if File.exist?(target_dir)
 
         zip_dir = CBin::Config::Builder.instance.zip_dir
@@ -70,19 +72,18 @@ module CBin
 
       #模拟器，目前只支持 debug x86-64
       def build_sim_libraries(defines)
-        UI.message 'Building simulator libraries'
+        UI.message "Building simulator libraries"
 
         # archs = %w[i386 x86_64]
         archs = ios_architectures_sim
         archs.map do |arch|
-          xcodebuild(defines, "-sdk iphonesimulator ARCHS=\'#{arch}\' ", "build-#{arch}",@build_model)
+          xcodebuild(defines, "-sdk iphonesimulator ARCHS=\'#{arch}\' ", "build-#{arch}", @build_model)
         end
-
       end
 
-
-      def static_libs_in_sandbox(build_dir = 'build')
+      def static_libs_in_sandbox(build_dir = "build")
         file = Dir.glob("#{build_dir}/lib#{target_name}.a")
+        puts "static_libs_in_sandbox ------------ #{file}"
         unless file
           UI.warn "file no find = #{build_dir}/lib#{target_name}.a"
         end
@@ -91,7 +92,8 @@ module CBin
 
       def build_static_library_for_ios(output)
         UI.message "Building ios libraries with archs #{ios_architectures}"
-        static_libs = static_libs_in_sandbox('build') + static_libs_in_sandbox('build-simulator') + @vendored_libraries
+        static_libs = static_libs_in_sandbox("build") + static_libs_in_sandbox("build-simulator") + @vendored_libraries
+        puts "build_static_library_for_ios before ------------ #{static_libs}"
         # if is_debug_model
         ios_architectures.map do |arch|
           static_libs += static_libs_in_sandbox("build-#{arch}") + @vendored_libraries
@@ -101,11 +103,12 @@ module CBin
         end
         # end
 
+        puts "build_static_library_for_ios after ------------ #{static_libs}"
         build_path = Pathname("build")
         build_path.mkpath unless build_path.exist?
 
         # if is_debug_model
-        libs = (ios_architectures + ios_architectures_sim) .map do |arch|
+        libs = (ios_architectures + ios_architectures_sim).map do |arch|
           library = "build-#{arch}/lib#{@spec.name}.a"
           library
         end
@@ -119,13 +122,14 @@ module CBin
         #     library
         #   end
         # end
+        puts "lipo -create -output ------------ #{output}, #{libs.join(" ")}"
 
-        UI.message "lipo -create -output #{output} #{libs.join(' ')}"
-        `lipo -create -output #{output} #{libs.join(' ')}`
+        UI.message "lipo -create -output #{output} #{libs.join(" ")}"
+        `lipo -create -output #{output} #{libs.join(" ")}`
       end
 
       def ios_build_options
-        "ARCHS=\'#{ios_architectures.join(' ')}\' OTHER_CFLAGS=\'-fembed-bitcode -Qunused-arguments\'"
+        "ARCHS=\'#{ios_architectures.join(" ")}\' OTHER_CFLAGS=\'-fembed-bitcode -Qunused-arguments\'"
       end
 
       def ios_architectures
@@ -150,7 +154,6 @@ module CBin
       end
 
       def ios_architectures_sim
-
         archs = %w[x86_64]
         # TODO 处理是否需要 i386
         archs
@@ -158,15 +161,15 @@ module CBin
 
       def compile
         defines = "GCC_PREPROCESSOR_DEFINITIONS='$(inherited)'"
-        defines += ' '
-        defines += @spec.consumer(@platform).compiler_flags.join(' ')
+        defines += " "
+        defines += @spec.consumer(@platform).compiler_flags.join(" ")
 
         options = ios_build_options
         # if is_debug_model
         archs = ios_architectures
         # archs = %w[arm64 armv7 armv7s]
         archs.map do |arch|
-          xcodebuild(defines, "ARCHS=\'#{arch}\' OTHER_CFLAGS=\'-fembed-bitcode -Qunused-arguments\'","build-#{arch}",@build_model)
+          xcodebuild(defines, "ARCHS=\'#{arch}\' OTHER_CFLAGS=\'-fembed-bitcode -Qunused-arguments\'", "build-#{arch}", @build_model)
         end
         # else
         # xcodebuild(defines,options)
@@ -189,8 +192,7 @@ module CBin
         end
       end
 
-      def xcodebuild(defines = '', args = '', build_dir = 'build', build_model = 'Debug')
-
+      def xcodebuild(defines = "", args = "", build_dir = "build", build_model = "Debug")
         unless File.exist?("Pods.xcodeproj") #cocoapods-generate v2.0.0
           command = "xcodebuild #{defines} #{args} CONFIGURATION_BUILD_DIR=#{File.join(File.expand_path("..", build_dir), File.basename(build_dir))} clean build -configuration #{build_model} -target #{target_name} -project ./Pods/Pods.xcodeproj 2>&1"
         else
@@ -202,10 +204,10 @@ module CBin
 
         if $CHILD_STATUS.exitstatus != 0
           raise <<~EOF
-            Build command failed: #{command}
-            Output:
-            #{output.map { |line| "    #{line}" }.join}
-          EOF
+                  Build command failed: #{command}
+                  Output:
+                  #{output.map { |line| "    #{line}" }.join}
+                EOF
 
           Process.exit
         end
@@ -221,9 +223,9 @@ module CBin
         raise "copy_headers #{spec_header_dir} no exist " unless File.exist?(spec_header_dir)
 
         Dir.chdir(spec_header_dir) do
-          headers = Dir.glob('*.h')
+          headers = Dir.glob("*.h")
           headers.each do |h|
-            public_headers << Pathname.new(File.join(Dir.pwd,h))
+            public_headers << Pathname.new(File.join(Dir.pwd, h))
           end
         end
         # end
@@ -270,15 +272,15 @@ module CBin
       end
 
       def copy_license
-        UI.message 'Copying license'
-        license_file = @spec.license[:file] || 'LICENSE'
+        UI.message "Copying license"
+        license_file = @spec.license[:file] || "LICENSE"
         `cp "#{license_file}" .` if Pathname(license_file).exist?
       end
 
       def copy_resources
-        resource_dir = './build/*.bundle'
-        resource_dir = './build-armv7/*.bundle' if File.exist?('./build-armv7')
-        resource_dir = './build-arm64/*.bundle' if File.exist?('./build-arm64')
+        resource_dir = "./build/*.bundle"
+        resource_dir = "./build-armv7/*.bundle" if File.exist?("./build-armv7")
+        resource_dir = "./build-arm64/*.bundle" if File.exist?("./build-arm64")
 
         bundles = Dir.glob(resource_dir)
 
@@ -286,26 +288,26 @@ module CBin
           consumer = spec.consumer(@platform)
           consumer.resource_bundles.keys +
             consumer.resources.map do |r|
-              File.basename(r, '.bundle') if File.extname(r) == 'bundle'
+              File.basename(r, ".bundle") if File.extname(r) == "bundle"
             end
         end.compact.uniq
 
         bundles.select! do |bundle|
-          bundle_name = File.basename(bundle, '.bundle')
+          bundle_name = File.basename(bundle, ".bundle")
           bundle_names.include?(bundle_name)
         end
 
         if bundles.count > 0
           UI.message "Copying bundle files #{bundles}"
-          bundle_files = bundles.join(' ')
+          bundle_files = bundles.join(" ")
           `cp -rp #{bundle_files} #{framework.resources_path} 2>&1`
         end
 
         real_source_dir = @source_dir
         unless @isRootSpec
-          spec_source_dir = File.join(Dir.pwd,"#{@spec.name}")
+          spec_source_dir = File.join(Dir.pwd, "#{@spec.name}")
           unless File.exist?(spec_source_dir)
-            spec_source_dir = File.join(Dir.pwd,"Pods/#{@spec.name}")
+            spec_source_dir = File.join(Dir.pwd, "Pods/#{@spec.name}")
           end
           raise "copy_resources #{spec_source_dir} no exist " unless File.exist?(spec_source_dir)
 
@@ -327,7 +329,7 @@ module CBin
             escape_resource << Shellwords.join(source)
           end
           UI.message "Copying resources #{escape_resource}"
-          `cp -rp #{escape_resource.join(' ')} #{framework.resources_path}`
+          `cp -rp #{escape_resource.join(" ")} #{framework.resources_path}`
         end
       end
 
@@ -339,13 +341,11 @@ module CBin
 
       def framework
         @framework ||= begin
-                         framework = Framework.new(@spec.name, @platform.name.to_s)
-                         framework.make
-                         framework
-                       end
+            framework = Framework.new(@spec.name, @platform.name.to_s)
+            framework.make
+            framework
+          end
       end
-
-
     end
   end
 end

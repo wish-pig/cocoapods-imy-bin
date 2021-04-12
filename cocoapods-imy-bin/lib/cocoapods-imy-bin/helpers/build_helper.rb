@@ -1,26 +1,26 @@
 # copy from https://github.com/CocoaPods/cocoapods-packager
 
-require 'cocoapods-imy-bin/native/podfile'
-require 'cocoapods/command/gen'
-require 'cocoapods/generate'
-require 'cocoapods-imy-bin/helpers/framework_builder'
-require 'cocoapods-imy-bin/helpers/library_builder'
-require 'cocoapods-imy-bin/config/config_builder'
+require "cocoapods-imy-bin/native/podfile"
+require "cocoapods/command/gen"
+require "cocoapods/generate"
+require "cocoapods-imy-bin/helpers/framework_builder"
+require "cocoapods-imy-bin/helpers/library_builder"
+require "cocoapods-imy-bin/config/config_builder"
 
 module CBin
   class Build
     class Helper
       include Pod
-#class var
+      #class var
       @@build_defines = ""
-#Debug下还待完成
+      #Debug下还待完成
       def initialize(spec,
                      platform,
                      framework_output,
                      zip,
                      rootSpec,
                      skip_archive = false,
-                     build_model="Release")
+                     build_model = "Release")
         @spec = spec
         @platform = platform
         @build_model = build_model
@@ -35,29 +35,31 @@ module CBin
 
       def build
         UI.section("Building static framework #{@spec}") do
-
+          puts "开始build static framewokr"
           build_static_framework
+          puts "编译完成 static framewokr"
           unless @skip_archive
-            unless  CBin::Build::Utils.is_framework(@spec)
+            unless CBin::Build::Utils.is_framework(@spec)
               build_static_library
               zip_static_library
             else
+              puts "是Framework，执行zip_static_framework 开始压缩Framework为zip"
               zip_static_framework
             end
           end
-
         end
-
       end
 
       def build_static_framework
         source_dir = Dir.pwd
-        file_accessor = Sandbox::FileAccessor.new(Pathname.new('.').expand_path, @spec.consumer(@platform))
+        file_accessor = Sandbox::FileAccessor.new(Pathname.new(".").expand_path, @spec.consumer(@platform))
         Dir.chdir(workspace_directory) do
-          builder = CBin::Framework::Builder.new(@spec, file_accessor, @platform, source_dir, @isRootSpec, @build_model )
+          builder = CBin::Framework::Builder.new(@spec, file_accessor, @platform, source_dir, @isRootSpec, @build_model)
           @@build_defines = builder.build if @isRootSpec
           begin
+            puts "开始lipo合并 static framewokr"
             @framework_path = builder.lipo_build(@@build_defines) unless @skip_archive
+            puts "完成lipo合并 static framewokr #{@framework_path}"
           rescue
             @skip_archive = true
           end
@@ -66,16 +68,16 @@ module CBin
 
       def build_static_library
         source_dir = zip_dir
-        file_accessor = Sandbox::FileAccessor.new(Pathname.new('.').expand_path, @spec.consumer(@platform))
+        file_accessor = Sandbox::FileAccessor.new(Pathname.new(".").expand_path, @spec.consumer(@platform))
         Dir.chdir(workspace_directory) do
-          builder = CBin::Library::Builder.new(@spec, file_accessor, @platform, source_dir,@framework_path)
+          builder = CBin::Library::Builder.new(@spec, file_accessor, @platform, source_dir, @framework_path)
           builder.build
         end
       end
 
       def zip_static_framework
-        Dir.chdir(File.join(workspace_directory,@framework_path.root_path)) do
-          output_name =  File.join(zip_dir, framework_name_zip)
+        Dir.chdir(File.join(workspace_directory, @framework_path.root_path)) do
+          output_name = File.join(zip_dir, framework_name_zip)
           unless File.exist?(framework_name)
             UI.puts "没有需要压缩的 framework 文件：#{framework_name}"
             return
@@ -97,12 +99,10 @@ module CBin
 
           `zip --symlinks -r #{output_library} #{library_name}`
         end
-
       end
 
-
       def clean_workspace
-        UI.puts 'Cleaning workspace'
+        UI.puts "Cleaning workspace"
 
         FileUtils.rm_rf(gen_name)
         Dir.chdir(zip_dir) do
@@ -137,22 +137,20 @@ module CBin
         CBin::Config::Builder.instance.gen_dir
       end
 
-
       def spec_file
         @spec_file ||= begin
-                         if @podspec
-                           find_spec_file(@podspec)
-                         else
-                           if code_spec_files.empty?
-                             raise Informative, '当前目录下没有找到可用源码 podspec.'
-                           end
+            if @podspec
+              find_spec_file(@podspec)
+            else
+              if code_spec_files.empty?
+                raise Informative, "当前目录下没有找到可用源码 podspec."
+              end
 
-                           spec_file = code_spec_files.first
-                           spec_file
-                         end
-                       end
+              spec_file = code_spec_files.first
+              spec_file
+            end
+          end
       end
-
     end
   end
 end

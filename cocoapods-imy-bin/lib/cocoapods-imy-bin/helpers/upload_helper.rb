@@ -1,21 +1,19 @@
-
-
 # copy from https://github.com/CocoaPods/cocoapods-packager
 
-require 'cocoapods-imy-bin/native/podfile'
-require 'cocoapods/command/gen'
-require 'cocoapods/generate'
-require 'cocoapods-imy-bin/helpers/framework_builder'
-require 'cocoapods-imy-bin/helpers/library_builder'
-require 'cocoapods-imy-bin/helpers/sources_helper'
-require 'cocoapods-imy-bin/command/bin/spec/push'
+require "cocoapods-imy-bin/native/podfile"
+require "cocoapods/command/gen"
+require "cocoapods/generate"
+require "cocoapods-imy-bin/helpers/framework_builder"
+require "cocoapods-imy-bin/helpers/library_builder"
+require "cocoapods-imy-bin/helpers/sources_helper"
+require "cocoapods-imy-bin/command/bin/spec/push"
 
 module CBin
   class Upload
     class Helper
       include CBin::SourcesHelper
 
-      def initialize(spec,code_dependencies,sources)
+      def initialize(spec, code_dependencies, sources)
         @spec = spec
         @code_dependencies = code_dependencies
         @sources = sources
@@ -64,28 +62,26 @@ EOF
         res
       end
 
-
       # 上传二进制 podspec
       def push_binary_repo(binary_podsepc_json)
         argvs = [
-            "#{binary_podsepc_json}",
-            "--binary",
-            "--sources=#{sources_option(@code_dependencies, @sources)},https:\/\/cdn.cocoapods.org",
-            "--skip-import-validation",
-            "--use-libraries",
-            "--allow-warnings",
-            "--verbose",
-            "--code-dependencies"
+          "#{binary_podsepc_json}",
+          "--binary",
+          "--sources=#{sources_option(@code_dependencies, @sources)},https:\/\/cdn.cocoapods.org",
+          "--skip-import-validation",
+          "--use-libraries",
+          "--allow-warnings",
+          "--verbose",
+          "--code-dependencies",
         ]
         if @verbose
-          argvs += ['--verbose']
+          argvs += ["--verbose"]
         end
 
         push = Pod::Command::Bin::Repo::Push.new(CLAide::ARGV.new(argvs))
         push.validate!
         push.run
       end
-
     end
   end
 end
