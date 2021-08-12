@@ -120,10 +120,11 @@ module Pod
             argvs += ["--env=#{@env}"]
           end
           argvs += ["--configuration=#{@config}"]
-
+          puts "run_archive before"
           archive = Pod::Command::Bin::Archive.new(CLAide::ARGV.new(argvs))
           archive.validate!
           source_specs = archive.run
+          puts "run_archive after #{source_specs}"
           source_specs
         end
 
@@ -176,7 +177,7 @@ module Pod
         def find_podspec
           name = nil
           Pathname.pwd.children.each do |child|
-            puts child
+            puts " #{__method__.to_s} #{child}"
             if File.file?(child)
               if child.extname == ".podspec"
                 name = File.basename(child)

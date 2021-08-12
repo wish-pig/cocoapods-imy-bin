@@ -33,8 +33,12 @@ module CBin
       else
         raise "\n=====  #{configuration_env} 参数有误，请检查%w[dev debug_iphoneos release_iphoneos]===="
       end
-
-      File.expand_path("#{Pod::Config.instance.home_dir}/#{file}")
+      file_path = "#{Pod::Config.instance.installation_root}/#{file}"
+      if file_path.blank?
+        file_path = "#{Pod::Config.instance.home_dir}/#{file}"
+      end
+      
+      File.expand_path(file_path)
     end
 
     def configuration_env

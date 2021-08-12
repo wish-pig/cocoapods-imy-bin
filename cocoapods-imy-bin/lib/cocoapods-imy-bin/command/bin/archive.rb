@@ -62,6 +62,8 @@ module Pod
 
         def run
           #清除之前的缓存
+          puts "run before "
+
           zip_dir = CBin::Config::Builder.instance.zip_dir
           FileUtils.rm_rf(zip_dir) if File.exist?(zip_dir)
 
@@ -71,11 +73,13 @@ module Pod
           source_specs = Array.new
           source_specs.concat(build_root_spec)
           source_specs.concat(build_dependencies) if @all_make
-
+          puts "run after #{source_specs}"
           source_specs
         end
 
         def build_root_spec
+          puts "build_root_spec before"
+
           source_specs = []
           builder = CBin::Build::Helper.new(@spec,
                                             @platform,
@@ -88,6 +92,8 @@ module Pod
           builder.clean_workspace if @clean && !@all_make
           source_specs << @spec unless CBin::Config::Builder.instance.white_pod_list.include?(@spec.name)
 
+          puts "build_root_spec after #{source_specs}"
+
           source_specs
         end
 
@@ -95,6 +101,8 @@ module Pod
           @build_finshed = true
           #如果没要求，就清空依赖库数据
           source_specs = []
+          puts "build_dependencies #{@@missing_binary_specs}"
+
           @@missing_binary_specs.uniq.each do |spec|
             next if spec.name.include?("/")
             next if spec.name == @spec.name
@@ -150,6 +158,7 @@ module Pod
         private
 
         def generate_project
+          puts "generate_project before #{@code_dependencies}"
           Podfile.execute_with_bin_plugin do
             Podfile.execute_with_use_binaries(!@code_dependencies) do
               argvs = [
@@ -165,6 +174,7 @@ module Pod
               end
 
               argvs << spec_file if spec_file
+              puts "generate_project after #{@argvs}"
 
               gen = Pod::Command::Gen.new(CLAide::ARGV.new(argvs))
               gen.validate!
