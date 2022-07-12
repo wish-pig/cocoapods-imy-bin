@@ -17,15 +17,16 @@ module Pod
       #
       # @param  [Specification] spec
       #
-      alias old_podfile_for_spec podfile_for_spec
+      alias old_podfile_for_spec podfile_for_specs
 
-      def podfile_for_spec(spec)
+      def podfile_for_specs(specs)
         generator = self
-        dir = configuration.gen_dir_for_pod(spec.name)
+        dir = configuration.gen_dir_for_specs(specs)
+        project_name = configuration.project_name_for_specs(specs)
 
         Pod::Podfile.new do
-          project "#{spec.name}.xcodeproj"
-          workspace "#{spec.name}.xcworkspace"
+          project "#{project_name}.xcodeproj"
+          workspace "#{project_name}.xcworkspace"
 
           plugin 'cocoapods-generate'
 
@@ -48,12 +49,17 @@ module Pod
 
           self.defined_in_file = dir.join('CocoaPods.podfile.yaml')
 
-          test_specs = spec.recursive_subspecs.select(&:test_specification?)
-          app_specs = if spec.respond_to?(:app_specification?)
-                        spec.recursive_subspecs.select(&:app_specification?)
-                      else
-                        []
-                      end
+           test_specs_by_spec = Hash[specs.map do |spec|
+            [spec, spec.recursive_subspecs.select(&:test_specification?)]
+          end]
+          app_specs_by_spec = Hash[specs.map do |spec|
+            app_specs = if spec.respond_to?(:app_specification?)
+                          spec.recursive_subspecs.select(&:app_specification?)
+                        else
+                          []
+                        end
+            [spec, app_specs]
+          end]
 
           # Stick all of the transitive dependencies in an abstract target.
           # This allows us to force CocoaPods to use the versions / sources / external sources
@@ -83,9 +89,8 @@ module Pod
           #   end
           # end
 
-          # Add platform-specific concrete targets that inherit the
-          # `pod` declaration for the local pod.
-          spec_platform_names = spec.available_platforms.map(&:string_name).flatten.each.reject do |platform_name|
+           # Add platform-specific concrete targets that inherit the `pod` declaration for the local pod.
+          spec_platform_names = specs.flat_map { |s| s.available_platforms.map(&:string_name) }.uniq.each.reject do |platform_name|
             !generator.configuration.platforms.nil? && !generator.configuration.platforms.include?(platform_name.downcase)
           end
 
@@ -106,17 +111,21 @@ module Pod
           # This is the pod declaration for the local pod,
           # it will be inherited by the concrete target definitions below
 
-          pod_options = generator.dependency_compilation_kwargs(spec.name)
-          pod_options[:path] = spec.defined_in_file.relative_path_from(dir).to_s
-          # generator.configuration.podfile.dependencies[0].external_source
+          specs.each do |spec|
+            # This is the pod declaration for the local pod,
+            # it will be inherited by the concrete target definitions below
+            pod_options = generator.dependency_compilation_kwargs(spec.name)
 
-
-          { testspecs: test_specs, appspecs: app_specs }.each do |key, specs|
-            pod_options[key] = specs.map { |s| s.name.sub(%r{^#{Regexp.escape spec.root.name}/}, '') }.sort unless specs.empty?
+            path = spec.defined_in_file.relative_path_from(dir).to_s
+            pod_options[:path] = path
+            { testspecs: test_specs_by_spec[spec], appspecs: app_specs_by_spec[spec] }.each do |key, subspecs|
+              pod_options[key] = subspecs.map { |s| s.name.sub(%r{^#{Regexp.escape spec.root.name}/}, '') }.sort unless subspecs.blank?
+            end
+            pod spec.name, **pod_options
           end
 
-          pod spec.name, **pod_options
-
+          spec = specs[0]
+          
           if Pod::Config.instance.podfile
             target_definitions['Pods'].instance_exec do
               target_definition = nil

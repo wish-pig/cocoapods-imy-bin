@@ -12,8 +12,8 @@ module CBin
     def template_hash
       {
           'configuration_env' => { description: '编译环境', default: 'dev', selection: %w[dev debug_iphoneos release_iphoneos] },
-          'code_repo_url' => { description: '源码私有源 Git 地址', default: 'git@github.com:su350380433/example_spec_source.git' },
-          'binary_repo_url' => { description: '二进制私有源 Git 地址', default: 'git@github.com:su350380433/example_spec_bin_dev.git' },
+          'code_repo_url' => { description: '源码私有源 Git 地址', default: 'https://github.com/cocoapods/specs.git' },
+          'binary_repo_url' => { description: '二进制私有源 Git 地址', default: 'https://gitlab.com/wish-pig/bin_spec_dev.git' },
           'binary_download_url' => { description: '二进制下载地址，内部会依次传入组件名称与版本，替换字符串中的 %s ', default: 'http://localhost:8080/frameworks/%s/%s/zip' },
           # 'binary_type' => { description: '二进制打包类型', default: 'framework', selection: %w[framework library] },
           'download_file_type' => { description: '下载二进制文件类型', default: 'zip', selection: %w[zip tgz tar tbz txz dmg] }
@@ -33,6 +33,7 @@ module CBin
       else
         raise "\n=====  #{configuration_env} 参数有误，请检查%w[dev debug_iphoneos release_iphoneos]===="
       end
+
       file_path = "#{Pod::Config.instance.installation_root}/#{file}"
       if file_path.blank?
         file_path = "#{Pod::Config.instance.home_dir}/#{file}"

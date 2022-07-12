@@ -115,7 +115,7 @@ module Pod
           end
           if @all_make
             argvs += ["--all-make"]
-          end
+          end 
           if @env
             argvs += ["--env=#{@env}"]
           end

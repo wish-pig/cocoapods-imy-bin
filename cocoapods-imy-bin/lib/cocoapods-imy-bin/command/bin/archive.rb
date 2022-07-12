@@ -174,7 +174,7 @@ module Pod
               end
 
               argvs << spec_file if spec_file
-              puts "generate_project after #{@argvs}"
+              puts "generate_project after #{argvs}"
 
               gen = Pod::Command::Gen.new(CLAide::ARGV.new(argvs))
               gen.validate!
